@@ -2,6 +2,7 @@ use std::time::{SystemTime, Duration};
 use num_traits::Num;
 use std::fmt::Display;
 
+// Cacheable trait
 pub trait Cacheable {
     fn is_expired(&self, insertion_time: SystemTime, time_to_expire: Duration) -> bool;
 }
@@ -16,6 +17,7 @@ impl<T: Num> Cacheable for T {
     }
 }
 
+// Cache struct / item
 pub struct Cache<T: Cacheable + Display> {
     pub value: T,
     pub insertion_time: SystemTime,
@@ -36,6 +38,7 @@ impl<T: Cacheable + Display> Cache<T> {
     }
 }
 
+// Cache system struct
 pub struct CacheSystem<T: Cacheable + Display> {
     pub items: Vec<Cache<T>>
 }
