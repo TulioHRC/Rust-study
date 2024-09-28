@@ -3,7 +3,7 @@ use grep_clone::{parse_config, run};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let (command, file_path) = match parse_config(&args) {
+    let (query, file_path) = match parse_config(&args) {
         Ok(config) => config,
         Err(e) => {
             println!("Problem parsing arguments: {e}");
@@ -11,7 +11,7 @@ fn main() {
         }
     };
 
-    if let Err(error) = run(command, file_path) {
+    if let Err(error) = run(query, file_path) {
         println!("Application error: {error}");
         process::exit(1);
     }
