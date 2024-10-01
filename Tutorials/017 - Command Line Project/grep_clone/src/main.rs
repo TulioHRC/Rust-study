@@ -6,13 +6,15 @@ fn main() {
     let (query, file_path) = match parse_config(&args) {
         Ok(config) => config,
         Err(e) => {
-            println!("Problem parsing arguments: {e}");
+            eprintln!("Problem parsing arguments: {e}");
             process::exit(1);
         }
     };
 
-    if let Err(error) = run(query, file_path) {
-        println!("Application error: {error}");
+    let ignore_case: bool = std::env::var("IGNORE_CASE").is_ok();
+
+    if let Err(error) = run(query, file_path, ignore_case) {
+        eprintln!("Application error: {error}");
         process::exit(1);
     }
 }

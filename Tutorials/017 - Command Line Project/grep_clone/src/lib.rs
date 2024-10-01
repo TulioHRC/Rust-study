@@ -12,11 +12,13 @@ pub fn parse_config(args: &Vec<String>) -> Result<(&String, &String), &'static s
 }
 
 // lifetime of the full_text is the same that its result in the query
-pub fn search_lines_with<'a>(query: &String, full_text: &'a String) -> Vec<String>{
+pub fn search_lines_with<'a>(query: &String, full_text: &'a String, ignore_case: bool) -> Vec<String>{
   let mut found_lines = Vec::new();
-  
+  let query = if ignore_case == false { query } else { &query.to_lowercase() };
+
   for line in full_text.lines() {
-    if line.contains(query) {
+    let line_to_analysis = if ignore_case == false { line } else { &line.to_lowercase() };
+    if line_to_analysis.to_lowercase().contains(query) {
       found_lines.push(line.to_string());
     }
   }
@@ -25,10 +27,10 @@ pub fn search_lines_with<'a>(query: &String, full_text: &'a String) -> Vec<Strin
 }
 
 // Box<dyn error::Error> means whicherver error type you want to return
-pub fn run(query: &String, file_path: &String) -> Result<(), Box<dyn error::Error>>{
+pub fn run(query: &String, file_path: &String, ignore_case: bool) -> Result<(), Box<dyn error::Error>>{
   let file_content = fs::read_to_string(file_path)?; // '?' returns error if needed
 
-  for line in search_lines_with(query, &file_content){
+  for line in search_lines_with(query, &file_content, ignore_case){
     println!("{line}");
   }
 
@@ -65,7 +67,7 @@ Rust:
 safe, fast, productive
 Pick three.");
     
-    assert_eq!(vec!["safe, fast, productive"], search_lines_with(&query, &file_content));
+    assert_eq!(vec!["safe, fast, productive"], search_lines_with(&query, &file_content, false));
   }
 
   #[test]
@@ -76,7 +78,7 @@ Rust:
 safe, fast
 Pick three.");
     
-    assert_eq!(Vec::<String>::new(), search_lines_with(&query, &file_content));
+    assert_eq!(Vec::<String>::new(), search_lines_with(&query, &file_content, false));
   }
 
   #[test]
@@ -87,6 +89,18 @@ Rust productiveness:
 safe, fast, productive
 Pick three ducks.");
     
-    assert_eq!(vec!["Rust productiveness:", "safe, fast, productive"], search_lines_with(&query, &file_content));
+    assert_eq!(vec!["Rust productiveness:", "safe, fast, productive"], search_lines_with(&query, &file_content, false));
+  }
+
+  #[test]
+  fn search_lines_with_case_sensitive(){
+    let query = String::from("RusT");
+    let file_content = String::from("\
+Rust:
+just
+trust me
+I love you!");
+
+    assert_eq!(vec!["Rust:", "trust me"], search_lines_with(&query, &file_content, true));
   }
 }
