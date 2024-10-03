@@ -1,29 +1,33 @@
 use std::{fs, error};
 
-pub fn parse_config(args: &Vec<String>) -> Result<(&String, &String), &'static str> {
-  if args.len() < 3 {
-      return Err("Not enough arguments!");
-  }
+pub fn parse_config(mut args: impl Iterator<Item = String>) -> Result<(String, String), &'static str> {
+  args.next(); // First argument is the local path
 
-  let query = &args[1];
-  let file_path = &args[2];
+
+  let query = match args.next() {
+    Some(arg) => arg,
+    None => return Err("Didn't get query argument!")
+  };
+  let file_path = match args.next() {
+    Some(arg) => arg,
+    None => return Err("Didn't get file path argument!")
+  };
 
   return Ok((query, file_path));
 }
 
 // lifetime of the full_text is the same that its result in the query
 pub fn search_lines_with<'a>(query: &String, full_text: &'a String, ignore_case: bool) -> Vec<String>{
-  let mut found_lines = Vec::new();
   let query = if ignore_case == false { query } else { &query.to_lowercase() };
 
-  for line in full_text.lines() {
-    let line_to_analysis = if ignore_case == false { line } else { &line.to_lowercase() };
-    if line_to_analysis.to_lowercase().contains(query) {
-      found_lines.push(line.to_string());
-    }
-  }
-
-  return found_lines;
+  return full_text
+    .lines()
+    .filter(|line| {
+      let line_to_analysis = if ignore_case == false { line.to_string() } else { line.to_string().to_lowercase() };
+      return line_to_analysis.contains(query);
+    })
+    .map(|x| x.to_string())
+    .collect();
 }
 
 // Box<dyn error::Error> means whicherver error type you want to return
@@ -42,21 +46,27 @@ mod test {
   use super::*;
 
   #[test]
-  fn parse_config_less_arguments(){
+  fn parse_config_no_arguments(){
     let args: Vec<String> = vec!["Test".to_string()];
-    assert_eq!(parse_config(&args), Err("Not enough arguments!"));
+    assert_eq!(parse_config(args.into_iter()), Err("Didn't get query argument!"));
+  }
+
+  #[test]
+  fn parse_config_one_argument(){
+    let args: Vec<String> = vec!["Test".to_string(), "query".to_string()];
+    assert_eq!(parse_config(args.into_iter()), Err("Didn't get file path argument!"));
   }
 
   #[test]
   fn parse_config_right_arguments(){
     let args: Vec<String> = vec![String::from("binary_path"), String::from("test"), String::from("test.txt")];
-    assert_eq!(parse_config(&args), Ok((&"test".to_string(), &"test.txt".to_string())));
+    assert_eq!(parse_config(args.into_iter()), Ok(("test".to_string(), "test.txt".to_string())));
   }
 
   #[test]
   fn parse_config_more_arguments(){
     let args: Vec<String> = vec![String::from("binary_path"), String::from("test"), String::from("test.txt"), String::from("additional_argument")];
-    assert_eq!(parse_config(&args), Ok((&"test".to_string(), &"test.txt".to_string())));
+    assert_eq!(parse_config(args.into_iter()), Ok(("test".to_string(), "test.txt".to_string())));
   }
 
   #[test]
